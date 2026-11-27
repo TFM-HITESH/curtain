@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest an improvement or a new capability.
+labels: ["type: feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For open-ended ideas or questions, [Discussions](https://github.com/TFM-HITESH/curtain/discussions/categories/ideas) is a better place to start.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation you were in. Concrete moments help more than solutions.
+      placeholder: For example, "When I present to a client, I want to…"
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+  - type: dropdown
+    id: sites
+    attributes:
+      label: Which sites does this affect?
+      multiple: true
+      options:
+        - ChatGPT
+        - Claude
+        - Gemini
+        - All of them
+        - Not site-specific

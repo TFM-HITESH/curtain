@@ -1,0 +1,55 @@
+name: A site changed or something is showing
+description: Hidden content is visible, something looks empty or broken, or Guest mode doesn't behave on ChatGPT, Claude or Gemini.
+title: "[site] "
+labels: ["type: site-change"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. Sites change often, and reports like yours are how Curtain keeps up.
+
+        **Please check the [pinned issues](https://github.com/TFM-HITESH/curtain/issues) first.** When a site changes, many people notice at once.
+
+        Never paste chat titles, chat content or anything personal. If you add a screenshot, blur everything private first.
+  - type: dropdown
+    id: site
+    attributes:
+      label: Site
+      options:
+        - ChatGPT
+        - Claude
+        - Gemini
+    validations:
+      required: true
+  - type: dropdown
+    id: problem
+    attributes:
+      label: What happened?
+      options:
+        - Something that should be hidden is showing
+        - Something is missing, empty or looks broken
+        - Guest mode won't turn on or off
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Where on the page did it happen, and what did you expect instead? Describe it without quoting any of your content.
+      placeholder: For example, "With Guest mode on, the search dialog lists older chats."
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Paste the details from the Curtain popup (Report a problem → Copy details). They contain only versions and which parts of the page Curtain could find, never your data.
+      render: text
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Before you submit
+      options:
+        - label: This report and any screenshots contain no chat titles, chat content or personal information.
+          required: true
