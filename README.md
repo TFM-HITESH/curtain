@@ -33,11 +33,11 @@ Curtain is built for moments like these:
 
 ## Supported platforms
 
-| | Status |
-| --- | --- |
+|                               | Status         |
+| ----------------------------- | -------------- |
 | Chrome, Edge, Brave (desktop) | In development |
-| Firefox | Planned |
-| ChatGPT · Claude · Gemini | In development |
+| Firefox                       | Planned        |
+| ChatGPT · Claude · Gemini     | In development |
 
 ## License
 
