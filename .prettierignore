@@ -2,3 +2,4 @@ pnpm-lock.yaml
 .output/
 .wxt/
 coverage/
+CHANGELOG.md
