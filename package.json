@@ -1,0 +1,45 @@
+{
+  "name": "curtain",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Guest mode for ChatGPT, Claude and Gemini.",
+  "license": "MIT",
+  "author": "Hitesh Shivkumar",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TFM-HITESH/curtain.git"
+  },
+  "homepage": "https://github.com/TFM-HITESH/curtain#readme",
+  "bugs": "https://github.com/TFM-HITESH/curtain/issues",
+  "type": "module",
+  "packageManager": "pnpm@12.23.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "postinstall": "wxt prepare",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "prettier": {},
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.15.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-import-resolver-typescript": "4.4.5",
+    "eslint-plugin-boundaries": "7.4.5",
+    "globals": "17.14.0",
+    "prettier": "3.10.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.74.0",
+    "vitest": "5.1.2",
+    "wxt": "0.21.5"
+  }
+}
