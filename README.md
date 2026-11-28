@@ -39,6 +39,17 @@ Curtain is built for moments like these:
 | Firefox                       | Planned        |
 | ChatGPT · Claude · Gemini     | In development |
 
+## Verifying a release
+
+Every [release](https://github.com/TFM-HITESH/curtain/releases) is built by GitHub Actions from a tagged commit and attaches the extension zip, a `SHA256SUMS.txt` file and a signed build provenance attestation. The zip in each browser store is the same file.
+
+To check that a zip was built from this repository's source, use the [GitHub CLI](https://cli.github.com):
+
+```sh
+gh attestation verify curtain-0.1.0-chrome.zip --repo TFM-HITESH/curtain
+sha256sum --check --ignore-missing SHA256SUMS.txt
+```
+
 ## License
 
 [MIT](LICENSE)
