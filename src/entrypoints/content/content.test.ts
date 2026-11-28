@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { createGuestState } from "@/core";
+import { createGuestState, startSession } from "@/core";
 import { defineSite } from "@/engine";
 import { writeState } from "@/platform";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,7 +11,15 @@ const site = defineSite({
   hosts: ["claude.ai"],
   title: "Claude",
   routes: { newChat: /^\/new$/, chat: /^\/chat\/([^/]+)/ },
-  surfaces: [],
+  surfaces: [
+    {
+      kind: "filter",
+      id: "chats",
+      item: "a[data-chat-row]",
+      itemKind: "chat",
+      idFrom: { href: /\/chat\/([^/?#]+)/ },
+    },
+  ],
 });
 const registry = [site];
 
@@ -105,6 +113,22 @@ describe("startContent", () => {
     expect(mode()).toBe("guest");
   });
 
+  it("waits for Guest mode's state before acting on marks", async () => {
+    let finishRead: (value: Record<string, unknown>) => void = () => undefined;
+    const slowRead = new Promise<Record<string, unknown>>((resolve) => {
+      finishRead = resolve;
+    });
+    vi.spyOn(fakeBrowser.storage.local, "get").mockReturnValueOnce(
+      slowRead as never,
+    );
+    content = startContent({ hostname: "claude.ai", registry });
+    await writeState({ marks: { chatgpt: [], claude: ["a"], gemini: [] } });
+    expect(mode()).toBe("pending");
+    finishRead({});
+    await settle();
+    expect(mode()).toBe("off");
+  });
+
   it("stays hidden if storage can't be read", async () => {
     const get = vi
       .spyOn(fakeBrowser.storage.local, "get")
@@ -113,5 +137,55 @@ describe("startContent", () => {
     await settle();
     expect(get).toHaveBeenCalledOnce();
     expect(mode()).toBe("pending");
+  });
+
+  describe("with a sidebar", () => {
+    beforeEach(() => {
+      document.body.innerHTML = `
+        <a data-chat-row href="/chat/session" id="session"></a>
+        <a data-chat-row href="/chat/old" id="old"></a>
+      `;
+    });
+
+    function shown(id: string) {
+      return (
+        document.getElementById(id)?.hasAttribute("data-curtain-ok") ?? false
+      );
+    }
+
+    it("reveals only session chats once Guest mode is on", async () => {
+      await writeState({
+        guest: startSession(Date.now(), { site: "claude", chatId: "session" }),
+      });
+      content = startContent({ hostname: "claude.ai", registry });
+      await vi.waitFor(() => {
+        expect(mode()).toBe("guest");
+      });
+      expect(shown("session")).toBe(true);
+      expect(shown("old")).toBe(false);
+    });
+
+    it("shows a chat once it's marked", async () => {
+      await writeState({ guest: createGuestState(Date.now()) });
+      content = startContent({ hostname: "claude.ai", registry });
+      await vi.waitFor(() => {
+        expect(mode()).toBe("guest");
+      });
+      expect(shown("old")).toBe(false);
+      await writeState({
+        marks: { chatgpt: [], claude: ["old"], gemini: [] },
+      });
+      expect(shown("old")).toBe(true);
+    });
+
+    it("stops deciding when Guest mode turns off", async () => {
+      await writeState({ guest: createGuestState(Date.now()) });
+      content = startContent({ hostname: "claude.ai", registry });
+      await vi.waitFor(() => {
+        expect(mode()).toBe("guest");
+      });
+      await writeState({ guest: null });
+      expect(mode()).toBe("off");
+    });
   });
 });

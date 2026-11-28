@@ -16,3 +16,6 @@ export {
   guardCss,
   splitSelectorList,
 } from "./concealer/guard-css";
+export { createListWatcher } from "./observer/list-watcher";
+export type { ListWatcher, ListWatcherOptions } from "./observer/list-watcher";
+export { readId } from "./observer/read-id";
