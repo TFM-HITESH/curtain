@@ -1,3 +1,5 @@
+<img src="public/icons/app-128.png" alt="" width="80" height="80">
+
 # Curtain
 
 **Guest mode for ChatGPT, Claude and Gemini.**
