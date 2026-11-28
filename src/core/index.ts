@@ -20,3 +20,18 @@ export type {
 } from "./state/schema";
 export { migrate } from "./state/migrations";
 export type { Migration, MigrationResult } from "./state/migrations";
+export {
+  EARLIEST_ID_TIME,
+  MAX_FUTURE_MS,
+  decodeChatGptIdTime,
+  decodeUuidV7Time,
+  plausibleIdTime,
+} from "./time/id-time";
+export type { IdTimeDecoder } from "./time/id-time";
+export {
+  MAX_SKEW_MS,
+  MEASURED_TOLERANCE_MS,
+  UNMEASURED_TOLERANCE_MS,
+  createdInSession,
+  measureSkew,
+} from "./time/skew";

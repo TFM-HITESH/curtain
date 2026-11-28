@@ -28,8 +28,11 @@ export interface SessionSets {
 export interface GuestState {
   /** When Guest mode was turned on, in local epoch milliseconds. */
   readonly startedAt: number;
-  /** Measured difference between server and local clocks, in milliseconds. */
-  readonly skewMs: number;
+  /**
+   * Measured difference between the site's server clock and the local clock,
+   * in milliseconds (server minus local), or `null` until it's measured.
+   */
+  readonly skewMs: number | null;
   readonly session: Readonly<Record<SiteId, SessionSets>>;
 }
 
@@ -87,7 +90,7 @@ export function emptySessionSets(): SessionSets {
 
 /** A fresh Guest mode session starting at `startedAt`. */
 export function createGuestState(startedAt: number): GuestState {
-  return { startedAt, skewMs: 0, session: perSite(emptySessionSets) };
+  return { startedAt, skewMs: null, session: perSite(emptySessionSets) };
 }
 
 export function emptyMarks(): Marks {
