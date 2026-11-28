@@ -8,3 +8,11 @@ export type {
   Surface,
 } from "./site/definition";
 export { selectorProblems } from "./site/selectors";
+export { conceal, installConcealer, reveal } from "./concealer/concealer";
+export type { Concealer, Mode } from "./concealer/concealer";
+export {
+  MODE_ATTRIBUTE,
+  OK_ATTRIBUTE,
+  guardCss,
+  splitSelectorList,
+} from "./concealer/guard-css";
