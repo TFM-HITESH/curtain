@@ -18,7 +18,11 @@ export type {
   StorageKey,
   StorageState,
 } from "./state/schema";
-export { normalizeState, normalizeValue } from "./state/normalize";
+export {
+  normalizeIds,
+  normalizeState,
+  normalizeValue,
+} from "./state/normalize";
 export { migrate } from "./state/migrations";
 export type { Migration, MigrationResult } from "./state/migrations";
 export {
@@ -55,3 +59,13 @@ export {
   recordFailure,
   recordSuccess,
 } from "./pin/lockout";
+export {
+  addToSession,
+  clearMarks,
+  isSiteId,
+  recordCreatedChat,
+  revealChat,
+  setMark,
+  startSession,
+} from "./state/transitions";
+export type { SessionKind } from "./state/transitions";
