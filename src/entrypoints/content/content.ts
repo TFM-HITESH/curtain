@@ -6,12 +6,15 @@ import {
 } from "@/core";
 import {
   createListWatcher,
+  createdChat,
   installConcealer,
+  watchNavigation,
   type Concealer,
   type ListWatcherOptions,
   type SiteDefinition,
+  type WatchNavigationOptions,
 } from "@/engine";
-import { onStateChanged, readState } from "@/platform";
+import { messages, onStateChanged, readState } from "@/platform";
 import { siteForHost, sites } from "@/sites";
 
 /**
@@ -19,7 +22,8 @@ import { siteForHost, sites } from "@/sites";
  *
  * Hiding starts straight away, before Guest mode's state is known, and stays
  * in place if storage never answers. Once Guest mode is known to be on, the
- * list watcher reveals what belongs to the session.
+ * list watcher reveals what belongs to the session, and chats created in this
+ * tab are reported so they join the session everywhere.
  */
 
 export interface ContentOptions {
@@ -29,6 +33,8 @@ export interface ContentOptions {
   readonly registry?: readonly SiteDefinition[];
   /** Only tests change these. */
   readonly watcher?: ListWatcherOptions;
+  readonly navigation?: WatchNavigationOptions;
+  readonly now?: () => number;
 }
 
 export interface Content {
@@ -41,6 +47,8 @@ export function startContent({
   doc = document,
   registry = sites,
   watcher: watcherOptions = {},
+  navigation: navigationOptions = {},
+  now = Date.now,
 }: ContentOptions = {}): Content | undefined {
   const site = siteForHost(hostname, registry);
   if (!site) return undefined;
@@ -76,6 +84,18 @@ export function startContent({
     render();
   });
 
+  const stopNavigation = watchNavigation((change) => {
+    // Only chats created while Guest mode is on join the session.
+    if (!guest) return;
+    const created = createdChat(site, change, now());
+    if (!created) return;
+    messages
+      .send("session/chat-created", { site: siteId, ...created })
+      .catch(() => {
+        // If the worker can't be reached, the chat stays hidden: the safe side.
+      });
+  }, navigationOptions);
+
   readState().then(
     (state) => {
       guest ??= state.guest;
@@ -90,6 +110,7 @@ export function startContent({
   return {
     concealer,
     stop: () => {
+      stopNavigation();
       stopListening();
       watcher.stop();
       concealer.stop();
