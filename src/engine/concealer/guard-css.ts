@@ -13,6 +13,10 @@ import type { SiteDefinition, Selector } from "../site/definition";
 export const MODE_ATTRIBUTE = "data-curtain";
 /** The attribute the engine adds to items that may be shown. */
 export const OK_ATTRIBUTE = "data-curtain-ok";
+/** Set on `<html>` while the page shows past content, such as an old chat. */
+export const PAST_ATTRIBUTE = "data-curtain-past";
+/** Marks the cover element, which stays visible over hidden content. */
+export const COVER_ATTRIBUTE = "data-curtain-cover";
 
 /** Matches the page whenever hiding applies: Guest mode on, or not known yet. */
 const ACTIVE = `:where(:root[${MODE_ATTRIBUTE}="guest"], :root[${MODE_ATTRIBUTE}="pending"])`;
@@ -79,11 +83,27 @@ function rule(list: Selector, suffix: string): string {
   return `${selectors.join(", ")} ${HIDE}`;
 }
 
+/**
+ * While a past chat is shown, everything in the chat area except the cover is
+ * hidden from sight and from screen readers. Every descendant is matched, so
+ * nothing inside can opt back in with its own `visibility`. Visibility, not
+ * display, keeps the site's layout intact underneath.
+ */
+function coverRule(site: SiteDefinition): string[] {
+  if (!site.cover) return [];
+  const selectors = splitSelectorList(site.cover.target).map(
+    (target) =>
+      `${ACTIVE}[${PAST_ATTRIBUTE}] ${target} :not([${COVER_ATTRIBUTE}], [${COVER_ATTRIBUTE}] *)`,
+  );
+  return [`${selectors.join(", ")} { visibility: hidden !important; }`];
+}
+
 export function guardCss(site: SiteDefinition): string {
   return [
     ...hiddenUntilAllowed(site).map((list) =>
       rule(list, `:not([${OK_ATTRIBUTE}])`),
     ),
     ...alwaysHidden(site).map((list) => rule(list, "")),
+    ...coverRule(site),
   ].join("\n");
 }

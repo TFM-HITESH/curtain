@@ -73,6 +73,32 @@ export interface SiteDefinition {
    * goes missing, the site has probably changed, and the popup says so.
    */
   readonly anchors?: readonly Anchor[];
+  /** Where and how a past chat is covered. */
+  readonly cover?: CoverSpec;
+}
+
+/**
+ * The cover over a past chat. Its look comes from the site at runtime: CSS
+ * custom properties where the site has them, and computed styles otherwise.
+ */
+export interface CoverSpec {
+  /** The chat area to cover: thread and composer, not the sidebar. */
+  readonly target: Selector;
+  /** Where "New chat" goes, such as "/" or "/new". */
+  readonly newChatHref: string;
+  readonly theme?: CoverTheme;
+}
+
+/** The site's own design tokens, as CSS custom property names. */
+export interface CoverTheme {
+  readonly surface?: string;
+  readonly text?: string;
+  readonly muted?: string;
+  readonly border?: string;
+  /** An element whose font the cover copies, when `<body>`'s isn't the UI font. */
+  readonly fontFrom?: Selector;
+  /** An element whose font the heading copies, such as a greeting. */
+  readonly headingFontFrom?: Selector;
 }
 
 export interface Anchor {
@@ -176,5 +202,31 @@ export function siteProblems(site: SiteDefinition): string[] {
     }
   }
 
+  if (site.cover) problems.push(...coverProblems(site.cover));
+
+  return problems;
+}
+
+function coverProblems(cover: CoverSpec): string[] {
+  const problems: string[] = [];
+  const selectors = [
+    cover.target,
+    cover.theme?.fontFrom,
+    cover.theme?.headingFontFrom,
+  ].filter((selector) => selector !== undefined);
+  for (const selector of selectors) {
+    for (const problem of selectorProblems(selector)) {
+      problems.push(`cover: "${selector}" ${problem}`);
+    }
+  }
+  if (!cover.newChatHref.startsWith("/")) {
+    problems.push("cover: the new-chat link must be a path on the site");
+  }
+  const { surface, text, muted, border } = cover.theme ?? {};
+  for (const name of [surface, text, muted, border]) {
+    if (name !== undefined && !/^--[\w-]+$/.test(name)) {
+      problems.push(`cover: "${name}" isn't a CSS custom property`);
+    }
+  }
   return problems;
 }
