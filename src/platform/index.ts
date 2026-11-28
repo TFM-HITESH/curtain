@@ -9,3 +9,5 @@ export type {
 } from "./messaging";
 export { onStateChanged, readRawState, readState, writeState } from "./storage";
 export type { StateChanges } from "./storage";
+export { messages } from "./messages";
+export type { ActionResult, CurtainMessages, Refusal } from "./messages";
