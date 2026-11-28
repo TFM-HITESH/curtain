@@ -48,10 +48,15 @@ jobs:
       id-token: write # to sign the provenance attestation
       attestations: write # to store the provenance attestation
     steps:
+      # The release is tagged on the commit this run was triggered by, so it is checked out directly.
+      - name: Confirm the release commit
+        env:
+          RELEASE_SHA: ${{ needs.release-please.outputs.sha }}
+        run: test "$RELEASE_SHA" = "$GITHUB_SHA"
+
       - name: Check out the release commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.release-please.outputs.sha }}
           persist-credentials: false
 
       - name: Set up pnpm
@@ -107,10 +112,15 @@ jobs:
       contents: read # to check out the repository and download release assets
       attestations: read # to verify the release zip before uploading it
     steps:
+      # The release is tagged on the commit this run was triggered by, so it is checked out directly.
+      - name: Confirm the release commit
+        env:
+          RELEASE_SHA: ${{ needs.release-please.outputs.sha }}
+        run: test "$RELEASE_SHA" = "$GITHUB_SHA"
+
       - name: Check out the release commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.release-please.outputs.sha }}
           persist-credentials: false
 
       - name: Set up pnpm
@@ -159,10 +169,15 @@ jobs:
       contents: read # to check out the repository and download release assets
       attestations: read # to verify the release zip before uploading it
     steps:
+      # The release is tagged on the commit this run was triggered by, so it is checked out directly.
+      - name: Confirm the release commit
+        env:
+          RELEASE_SHA: ${{ needs.release-please.outputs.sha }}
+        run: test "$RELEASE_SHA" = "$GITHUB_SHA"
+
       - name: Check out the release commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.release-please.outputs.sha }}
           persist-credentials: false
 
       - name: Set up pnpm
