@@ -371,4 +371,94 @@ describe("startContent", () => {
       expect(mode()).not.toBeNull();
     });
   });
+
+  describe("tab title", () => {
+    function onPath(pathname: string) {
+      const location = { pathname };
+      const navigation = new EventTarget();
+      return {
+        win: { location, navigation } as unknown as Window,
+        go(path: string) {
+          location.pathname = path;
+          navigation.dispatchEvent(
+            Object.assign(new Event("currententrychange"), {
+              navigationType: "push",
+            }),
+          );
+        },
+      };
+    }
+
+    beforeEach(() => {
+      document.title = "Trip plans - Claude";
+    });
+
+    it("is neutral on a chat page before Guest mode's state is known", () => {
+      content = startContent({
+        hostname: "claude.ai",
+        registry,
+        navigation: { win: onPath("/chat/old").win },
+      });
+      expect(document.title).toBe("Claude");
+    });
+
+    it("stays neutral on a past chat in Guest mode", async () => {
+      await writeState({ guest: createGuestState(Date.now()) });
+      content = startContent({
+        hostname: "claude.ai",
+        registry,
+        navigation: { win: onPath("/chat/old").win },
+      });
+      await vi.waitFor(() => {
+        expect(mode()).toBe("guest");
+      });
+      expect(document.title).toBe("Claude");
+    });
+
+    it("comes back on a session chat", async () => {
+      await writeState({
+        guest: startSession(Date.now(), { site: "claude", chatId: "mine" }),
+      });
+      content = startContent({
+        hostname: "claude.ai",
+        registry,
+        navigation: { win: onPath("/chat/mine").win },
+      });
+      await vi.waitFor(() => {
+        expect(mode()).toBe("guest");
+      });
+      expect(document.title).toBe("Trip plans - Claude");
+    });
+
+    it("follows navigation between chats", async () => {
+      await writeState({
+        guest: startSession(Date.now(), { site: "claude", chatId: "mine" }),
+      });
+      const nav = onPath("/chat/mine");
+      content = startContent({
+        hostname: "claude.ai",
+        registry,
+        navigation: { win: nav.win },
+      });
+      await vi.waitFor(() => {
+        expect(mode()).toBe("guest");
+      });
+      nav.go("/chat/old");
+      expect(document.title).toBe("Claude");
+      nav.go("/new");
+      expect(document.title).toBe("Trip plans - Claude");
+    });
+
+    it("isn't touched while Guest mode is off", async () => {
+      content = startContent({
+        hostname: "claude.ai",
+        registry,
+        navigation: { win: onPath("/chat/old").win },
+      });
+      await vi.waitFor(() => {
+        expect(mode()).toBe("off");
+      });
+      expect(document.title).toBe("Trip plans - Claude");
+    });
+  });
 });
