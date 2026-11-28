@@ -77,7 +77,8 @@ export function normalizeGuest(value: unknown, now: number): GuestState | null {
   const skewMs = value["skewMs"];
   return {
     startedAt: value["startedAt"],
-    skewMs: typeof skewMs === "number" && Number.isFinite(skewMs) ? skewMs : 0,
+    skewMs:
+      typeof skewMs === "number" && Number.isFinite(skewMs) ? skewMs : null,
     session: perSite(value["session"], normalizeSessionSets),
   };
 }

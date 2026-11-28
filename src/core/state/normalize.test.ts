@@ -72,11 +72,13 @@ describe("normalizeGuest", () => {
     expect(guest?.session.gemini.chats).toEqual([]);
   });
 
-  it("resets an unusable clock skew to zero", () => {
-    expect(normalizeGuest({ startedAt: 1, skewMs: "x" }, NOW)?.skewMs).toBe(0);
+  it("treats an unusable clock skew as not measured", () => {
+    expect(
+      normalizeGuest({ startedAt: 1, skewMs: "x" }, NOW)?.skewMs,
+    ).toBeNull();
     expect(
       normalizeGuest({ startedAt: 1, skewMs: Number.NaN }, NOW)?.skewMs,
-    ).toBe(0);
+    ).toBeNull();
   });
 
   it("keeps Guest mode on with an empty session when the record is damaged", () => {

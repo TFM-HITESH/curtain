@@ -38,7 +38,7 @@ describe("createGuestState", () => {
   it("records the start time with empty sets for every site", () => {
     const guest = createGuestState(1_800_000_000_000);
     expect(guest.startedAt).toBe(1_800_000_000_000);
-    expect(guest.skewMs).toBe(0);
+    expect(guest.skewMs).toBeNull();
     expect(Object.keys(guest.session)).toEqual([...SITE_IDS]);
     for (const site of SITE_IDS) {
       expect(guest.session[site]).toEqual({
