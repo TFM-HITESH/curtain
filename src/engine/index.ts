@@ -32,3 +32,6 @@ export { createGuard } from "./safety/guard";
 export type { Guard } from "./safety/guard";
 export { checkHealthLater, missingAnchors } from "./health/site-health";
 export type { HealthCheckOptions } from "./health/site-health";
+export { showsPastContent } from "./navigation/past-content";
+export { createTitleGuard } from "./title/title-guard";
+export type { TitleGuard } from "./title/title-guard";
