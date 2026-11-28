@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   normalizeGuest,
+  normalizeHealth,
   normalizeIds,
   normalizeLockout,
   normalizeMarks,
@@ -9,7 +10,12 @@ import {
   normalizeState,
   normalizeValue,
 } from "./normalize";
-import { SCHEMA_VERSION, createGuestState, defaultState } from "./schema";
+import {
+  SCHEMA_VERSION,
+  createGuestState,
+  defaultState,
+  emptyHealth,
+} from "./schema";
 
 const NOW = 1_800_000_000_000;
 
@@ -198,5 +204,29 @@ describe("normalizeValue", () => {
       createGuestState(NOW),
     );
     expect(normalizeValue("schema", 0, NOW)).toBe(SCHEMA_VERSION);
+  });
+});
+
+describe("normalizeHealth", () => {
+  it("keeps valid records and fills missing sites", () => {
+    expect(
+      normalizeHealth({
+        chatgpt: {
+          missing: ["sidebar", "sidebar"],
+          failures: ["menu"],
+          checkedAt: NOW,
+        },
+      }),
+    ).toEqual({
+      chatgpt: { missing: ["sidebar"], failures: ["menu"], checkedAt: NOW },
+      claude: { missing: [], failures: [], checkedAt: 0 },
+      gemini: { missing: [], failures: [], checkedAt: 0 },
+    });
+  });
+
+  it("resets anything malformed", () => {
+    expect(
+      normalizeHealth({ chatgpt: "bad", claude: { checkedAt: -1 } }),
+    ).toEqual(emptyHealth());
   });
 });

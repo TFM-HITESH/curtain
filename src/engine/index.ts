@@ -1,5 +1,6 @@
 export { defineSite, siteProblems } from "./site/definition";
 export type {
+  Anchor,
   IdSource,
   ItemKind,
   Routes,
@@ -27,3 +28,7 @@ export type {
 } from "./navigation/created-chat";
 export { watchNavigation } from "./navigation/watch-navigation";
 export type { WatchNavigationOptions } from "./navigation/watch-navigation";
+export { createGuard } from "./safety/guard";
+export type { Guard } from "./safety/guard";
+export { checkHealthLater, missingAnchors } from "./health/site-health";
+export type { HealthCheckOptions } from "./health/site-health";

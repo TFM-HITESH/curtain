@@ -12,6 +12,7 @@ import type {
   Selector,
   SiteDefinition,
 } from "../site/definition";
+import { createGuard, type Guard } from "../safety/guard";
 import { readId } from "./read-id";
 
 /**
@@ -39,6 +40,8 @@ export interface ListWatcherOptions {
   readonly schedule?: (callback: () => void) => void;
   /** How long one batch may run before the rest waits for the next frame. */
   readonly budgetMs?: number;
+  /** Contains errors in the watcher's callbacks. */
+  readonly guard?: Guard;
 }
 
 export interface ListWatcher {
@@ -52,6 +55,9 @@ export interface ListWatcher {
   /** Decides everything waiting now, instead of on the next frame. */
   flush(): void;
 }
+
+/** The name errors in the watcher are reported under. */
+const FEATURE = "list-watcher";
 
 function targetsOf(site: SiteDefinition): Target[] {
   return site.surfaces.flatMap((surface): Target[] => {
@@ -93,6 +99,7 @@ export function createListWatcher(
     now = Date.now,
     schedule = (callback) => requestAnimationFrame(callback),
     budgetMs = 8,
+    guard = createGuard(),
   }: ListWatcherOptions = {},
 ): ListWatcher {
   const targets = targetsOf(site);
@@ -191,16 +198,18 @@ export function createListWatcher(
   function request() {
     if (scheduled) return;
     scheduled = true;
-    schedule(process);
+    schedule(guard.wrap(FEATURE, process));
   }
 
-  const observer = new MutationObserver((records) => {
-    for (const record of records) {
-      if (record.type === "attributes") collect(record.target);
-      for (const node of record.addedNodes) collect(node);
-    }
-    if (pending.size > 0) request();
-  });
+  const observer = new MutationObserver(
+    guard.wrap(FEATURE, (records: MutationRecord[]) => {
+      for (const record of records) {
+        if (record.type === "attributes") collect(record.target);
+        for (const node of record.addedNodes) collect(node);
+      }
+      if (pending.size > 0) request();
+    }),
+  );
 
   return {
     start(rules) {

@@ -428,3 +428,38 @@ describe("managing the PIN", () => {
     });
   });
 });
+
+describe("site health", () => {
+  it("records what a page found, even in Guest mode", async () => {
+    await messages.send("guest/turn-on", {});
+    clock += 1000;
+    expect(
+      await messages.send("health/report", {
+        site: "gemini",
+        missing: ["sidebar", "sidebar", ""],
+        failures: ["menu"],
+      }),
+    ).toEqual({ ok: true });
+    const { health } = await readState(clock);
+    expect(health.gemini).toEqual({
+      missing: ["sidebar"],
+      failures: ["menu"],
+      checkedAt: START + 1000,
+    });
+    expect(health.chatgpt.checkedAt).toBe(0);
+  });
+
+  it("replaces the previous report", async () => {
+    await messages.send("health/report", {
+      site: "claude",
+      missing: ["sidebar"],
+      failures: [],
+    });
+    await messages.send("health/report", {
+      site: "claude",
+      missing: [],
+      failures: [],
+    });
+    expect((await readState(clock)).health.claude.missing).toEqual([]);
+  });
+});
