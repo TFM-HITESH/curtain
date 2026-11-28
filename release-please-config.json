@@ -21,6 +21,6 @@
     { "type": "chore", "section": "Chores", "hidden": true }
   ],
   "packages": {
-    ".": {}
+    ".": { "initial-version": "0.1.0" }
   }
 }
