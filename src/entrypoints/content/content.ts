@@ -2,6 +2,7 @@ import {
   emptyMarks,
   visibilityRules,
   type GuestState,
+  type IsVisible,
   type Marks,
   type StorageState,
 } from "@/core";
@@ -9,8 +10,10 @@ import {
   checkHealthLater,
   createGuard,
   createListWatcher,
+  createTitleGuard,
   createdChat,
   installConcealer,
+  showsPastContent,
   watchNavigation,
   type Concealer,
   type Guard,
@@ -34,7 +37,8 @@ import { siteForHost, sites } from "@/sites";
  * Hiding starts straight away, before Guest mode's state is known, and stays
  * in place if storage never answers. Once Guest mode is known to be on, the
  * list watcher reveals what belongs to the session, and chats created in this
- * tab are reported so they join the session everywhere.
+ * tab are reported so they join the session everywhere. A past chat's title
+ * never shows in the tab bar.
  *
  * Every feature runs through a guard. If one fails, it stops on its own, and
  * if Curtain can no longer follow Guest mode, the page goes back to hiding.
@@ -47,6 +51,7 @@ const STATE = "state";
 const RENDER = "render";
 const NAVIGATION = "navigation";
 const HEALTH = "health-check";
+const TITLE = "title";
 
 export interface ContentOptions {
   readonly hostname?: string;
@@ -105,27 +110,43 @@ export function startContent({
     ...watcherOptions,
   });
 
+  const title = createTitleGuard(doc);
+  const win = navigationOptions.win ?? window;
+
   // `undefined` means not known yet. Change events are always newer than the
   // first read, so the read only fills in what no event has told us.
   let guest: GuestState | null | undefined;
   let marks: Marks | undefined;
+  let rules: IsVisible | null = null;
+
+  /** Keeps the tab title neutral while the page shows past content. */
+  const updateTitle = () => {
+    guard.run(TITLE, () => {
+      const past =
+        guest !== null &&
+        showsPastContent(site, win.location.pathname, rules, now());
+      if (past) title.hide(site.title);
+      else title.show();
+    });
+  };
 
   function render() {
     guard.run(RENDER, renderNow);
+    updateTitle();
   }
 
   function renderNow() {
     if (guest === undefined) return;
     if (guest === null) {
+      rules = null;
       watcher.stop();
       concealer.setMode("off");
       return;
     }
+    rules = visibilityRules({ guest, marks: marks ?? emptyMarks() }, siteId);
     // Decide every item before hiding switches from pending to Guest mode,
     // so nothing from an earlier session is shown even for a moment.
-    watcher.start(
-      visibilityRules({ guest, marks: marks ?? emptyMarks() }, siteId),
-    );
+    watcher.start(rules);
     concealer.setMode("guest");
   }
 
@@ -140,6 +161,7 @@ export function startContent({
 
   const stopNavigation = watchNavigation(
     guard.wrap(NAVIGATION, (change: RouteChange) => {
+      updateTitle();
       // Only chats created while Guest mode is on join the session.
       if (!guest) return;
       const created = createdChat(site, change, now());
@@ -152,6 +174,9 @@ export function startContent({
     }),
     navigationOptions,
   );
+
+  // Until Guest mode's state is known, a chat page counts as past content.
+  updateTitle();
 
   readState().then(
     guard.wrap(STATE, (state: StorageState) => {
@@ -178,6 +203,7 @@ export function startContent({
     guard,
     stop: () => {
       cancelHealthCheck();
+      title.show();
       stopNavigation();
       stopListening();
       watcher.stop();
