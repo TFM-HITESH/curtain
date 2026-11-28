@@ -176,3 +176,22 @@ describe("siteProblems", () => {
     ]);
   });
 });
+
+describe("anchors", () => {
+  it("are checked like other selectors", () => {
+    expect(
+      siteProblems(
+        withChanges({
+          anchors: [
+            { id: "sidebar", selector: "nav[data-sidebar]" },
+            { id: "menu", selector: ".profile-menu", on: /^\/c\// },
+            { id: "sidebar", selector: "[role=navigation]" },
+          ],
+        }),
+      ),
+    ).toEqual([
+      'anchor "menu": ".profile-menu" uses a class name',
+      'anchor "sidebar" is defined twice',
+    ]);
+  });
+});

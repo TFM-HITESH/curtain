@@ -68,6 +68,19 @@ export interface SiteDefinition {
   /** Reads creation times from this site's IDs, if they carry them. */
   readonly idTime?: IdTimeDecoder;
   readonly surfaces: readonly Surface[];
+  /**
+   * Elements that should always be on the page, such as the sidebar. If one
+   * goes missing, the site has probably changed, and the popup says so.
+   */
+  readonly anchors?: readonly Anchor[];
+}
+
+export interface Anchor {
+  /** A short name shown in diagnostics, such as "sidebar". */
+  readonly id: string;
+  readonly selector: Selector;
+  /** Only expected on paths that match. Expected everywhere if left out. */
+  readonly on?: RegExp;
 }
 
 /** Declares a site. It's an identity function that gives the definition its type. */
@@ -150,6 +163,16 @@ export function siteProblems(site: SiteDefinition): string[] {
       problems.push(...idSourceProblems(where, surface.idFrom));
       if (surface.chats)
         problems.push(...idSourceProblems(where, surface.chats.idFrom));
+    }
+  }
+
+  const anchorIds = new Set<string>();
+  for (const anchor of site.anchors ?? []) {
+    const where = `anchor "${anchor.id}"`;
+    if (anchorIds.has(anchor.id)) problems.push(`${where} is defined twice`);
+    anchorIds.add(anchor.id);
+    for (const problem of selectorProblems(anchor.selector)) {
+      problems.push(`${where}: "${anchor.selector}" ${problem}`);
     }
   }
 
