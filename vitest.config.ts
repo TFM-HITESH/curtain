@@ -10,12 +10,15 @@ export default defineConfig({
       include: [
         "src/core/**/*.ts",
         "src/platform/**/*.ts",
+        "src/engine/**/*.ts",
+        "src/sites/**/*.ts",
         "src/entrypoints/background/**/*.ts",
       ],
       // Entry files only wire things together.
       exclude: [
         "**/*.test.ts",
         "src/*/index.ts",
+        "src/sites/*/index.ts",
         "src/entrypoints/**/index.ts",
       ],
       // These decide what a guest can see and guard every state change, so they stay fully tested.
