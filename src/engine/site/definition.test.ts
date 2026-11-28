@@ -195,3 +195,42 @@ describe("anchors", () => {
     ]);
   });
 });
+
+describe("cover", () => {
+  const cover = {
+    target: "main[data-thread]",
+    newChatHref: "/",
+    theme: {
+      surface: "--main-surface",
+      text: "--text-primary",
+      fontFrom: "[data-composer]",
+    },
+  };
+
+  it("accepts a well-formed cover", () => {
+    expect(siteProblems(withChanges({ cover }))).toEqual([]);
+  });
+
+  it("checks its selectors, link and tokens", () => {
+    expect(
+      siteProblems(
+        withChanges({
+          cover: {
+            target: ".thread",
+            newChatHref: "https://chatgpt.com/",
+            theme: {
+              surface: "white",
+              border: "--border",
+              headingFontFrom: '[aria-label="Greeting"]',
+            },
+          },
+        }),
+      ),
+    ).toEqual([
+      'cover: ".thread" uses a class name',
+      'cover: "[aria-label="Greeting"]" uses the "aria-label" attribute',
+      "cover: the new-chat link must be a path on the site",
+      'cover: "white" isn\'t a CSS custom property',
+    ]);
+  });
+});

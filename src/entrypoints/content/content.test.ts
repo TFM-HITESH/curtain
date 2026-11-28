@@ -461,4 +461,101 @@ describe("startContent", () => {
       expect(document.title).toBe("Trip plans - Claude");
     });
   });
+
+  describe("cover", () => {
+    const covered = defineSite({
+      ...site,
+      cover: { target: "main[data-thread]", newChatHref: "/new" },
+    });
+
+    function at(pathname: string) {
+      const location = { pathname };
+      const navigation = new EventTarget();
+      return {
+        win: { location, navigation } as unknown as Window,
+        go(path: string) {
+          location.pathname = path;
+          navigation.dispatchEvent(
+            Object.assign(new Event("currententrychange"), {
+              navigationType: "push",
+            }),
+          );
+        },
+      };
+    }
+
+    function coverShown() {
+      return document.querySelector("[data-curtain-cover]") !== null;
+    }
+
+    beforeEach(() => {
+      document.body.innerHTML = "<main data-thread><p>Old chat</p></main>";
+    });
+
+    it("covers a past chat as soon as the page loads", () => {
+      content = startContent({
+        hostname: "claude.ai",
+        registry: [covered],
+        navigation: { win: at("/chat/old").win },
+      });
+      expect(coverShown()).toBe(true);
+    });
+
+    it("comes off a session chat and when Guest mode turns off", async () => {
+      await writeState({
+        guest: startSession(Date.now(), { site: "claude", chatId: "mine" }),
+      });
+      const nav = at("/chat/old");
+      content = startContent({
+        hostname: "claude.ai",
+        registry: [covered],
+        navigation: { win: nav.win },
+      });
+      await vi.waitFor(() => {
+        expect(mode()).toBe("guest");
+      });
+      expect(coverShown()).toBe(true);
+      nav.go("/chat/mine");
+      expect(coverShown()).toBe(false);
+      nav.go("/chat/old");
+      expect(coverShown()).toBe(true);
+
+      await writeState({ guest: null });
+      expect(coverShown()).toBe(false);
+    });
+
+    it("starts a new chat and exits Guest mode from its buttons", async () => {
+      await writeState({ guest: createGuestState(Date.now()) });
+      const turnOff = vi.fn(() => ({ ok: true as const }));
+      messages.handle({ "guest/turn-off": turnOff });
+      const navigate = vi.fn();
+      content = startContent({
+        hostname: "claude.ai",
+        registry: [covered],
+        navigation: { win: at("/chat/old").win },
+        navigate,
+      });
+      await vi.waitFor(() => {
+        expect(mode()).toBe("guest");
+      });
+      const [newChat, exit] = document.querySelectorAll<HTMLButtonElement>(
+        "[data-curtain-cover] button",
+      );
+      newChat?.click();
+      expect(navigate).toHaveBeenCalledWith("/new");
+      exit?.click();
+      await vi.waitFor(() => {
+        expect(turnOff).toHaveBeenCalledOnce();
+      });
+    });
+
+    it("isn't used on sites without one", () => {
+      content = startContent({
+        hostname: "claude.ai",
+        registry,
+        navigation: { win: at("/chat/old").win },
+      });
+      expect(coverShown()).toBe(false);
+    });
+  });
 });

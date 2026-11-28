@@ -30,6 +30,7 @@ import {
   type StateChanges,
 } from "@/platform";
 import { siteForHost, sites } from "@/sites";
+import { COVER_TEXT, createCover, type Cover } from "@/ui";
 
 /**
  * The content script, started at `document_start` on supported sites.
@@ -52,6 +53,7 @@ const RENDER = "render";
 const NAVIGATION = "navigation";
 const HEALTH = "health-check";
 const TITLE = "title";
+const COVER = "cover";
 
 export interface ContentOptions {
   readonly hostname?: string;
@@ -63,6 +65,7 @@ export interface ContentOptions {
   readonly navigation?: WatchNavigationOptions;
   readonly health?: HealthCheckOptions;
   readonly now?: () => number;
+  readonly navigate?: (href: string) => void;
 }
 
 export interface Content {
@@ -79,6 +82,9 @@ export function startContent({
   navigation: navigationOptions = {},
   health: healthOptions = {},
   now = Date.now,
+  navigate = (href) => {
+    location.assign(href);
+  },
 }: ContentOptions = {}): Content | undefined {
   const site = siteForHost(hostname, registry);
   if (!site) return undefined;
@@ -119,20 +125,42 @@ export function startContent({
   let marks: Marks | undefined;
   let rules: IsVisible | null = null;
 
-  /** Keeps the tab title neutral while the page shows past content. */
-  const updateTitle = () => {
+  const cover: Cover | null = site.cover
+    ? createCover({
+        spec: site.cover,
+        text: COVER_TEXT,
+        doc,
+        onNewChat: () => {
+          if (site.cover) navigate(site.cover.newChatHref);
+        },
+        onExit: () => {
+          // With a PIN set, the worker refuses until the PIN dialog asks for it.
+          messages.send("guest/turn-off", {}).catch(() => undefined);
+        },
+      })
+    : null;
+
+  /**
+   * While the page shows past content, the tab title is neutral and the chat
+   * area is covered.
+   */
+  const updatePage = () => {
+    const past =
+      guest !== null &&
+      showsPastContent(site, win.location.pathname, rules, now());
     guard.run(TITLE, () => {
-      const past =
-        guest !== null &&
-        showsPastContent(site, win.location.pathname, rules, now());
       if (past) title.hide(site.title);
       else title.show();
+    });
+    guard.run(COVER, () => {
+      if (past) cover?.show();
+      else cover?.hide();
     });
   };
 
   function render() {
     guard.run(RENDER, renderNow);
-    updateTitle();
+    updatePage();
   }
 
   function renderNow() {
@@ -161,7 +189,7 @@ export function startContent({
 
   const stopNavigation = watchNavigation(
     guard.wrap(NAVIGATION, (change: RouteChange) => {
-      updateTitle();
+      updatePage();
       // Only chats created while Guest mode is on join the session.
       if (!guest) return;
       const created = createdChat(site, change, now());
@@ -176,7 +204,7 @@ export function startContent({
   );
 
   // Until Guest mode's state is known, a chat page counts as past content.
-  updateTitle();
+  updatePage();
 
   readState().then(
     guard.wrap(STATE, (state: StorageState) => {
@@ -204,6 +232,7 @@ export function startContent({
     stop: () => {
       cancelHealthCheck();
       title.show();
+      cover?.hide();
       stopNavigation();
       stopListening();
       watcher.stop();

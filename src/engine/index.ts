@@ -1,6 +1,8 @@
 export { defineSite, siteProblems } from "./site/definition";
 export type {
   Anchor,
+  CoverSpec,
+  CoverTheme,
   IdSource,
   ItemKind,
   Routes,
@@ -12,8 +14,10 @@ export { selectorProblems } from "./site/selectors";
 export { conceal, installConcealer, reveal } from "./concealer/concealer";
 export type { Concealer, Mode } from "./concealer/concealer";
 export {
+  COVER_ATTRIBUTE,
   MODE_ATTRIBUTE,
   OK_ATTRIBUTE,
+  PAST_ATTRIBUTE,
   guardCss,
   splitSelectorList,
 } from "./concealer/guard-css";
@@ -35,3 +39,5 @@ export type { HealthCheckOptions } from "./health/site-health";
 export { showsPastContent } from "./navigation/past-content";
 export { createTitleGuard } from "./title/title-guard";
 export type { TitleGuard } from "./title/title-guard";
+export { resolveTheme } from "./mimic/theme";
+export type { ResolvedTheme } from "./mimic/theme";
