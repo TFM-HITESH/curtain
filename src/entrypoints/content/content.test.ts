@@ -558,4 +558,124 @@ describe("startContent", () => {
       expect(coverShown()).toBe(false);
     });
   });
+
+  describe("site menu", () => {
+    const withMenu = defineSite({
+      ...site,
+      menus: [
+        {
+          id: "user",
+          menu: "[role=menu]",
+          template: "[role=menuitem][data-kind=settings]",
+        },
+      ],
+    });
+
+    function at(pathname: string) {
+      return {
+        win: {
+          location: { pathname },
+          navigation: new EventTarget(),
+        } as unknown as Window,
+      };
+    }
+
+    function menuItem() {
+      return document.querySelector<HTMLElement>("[data-curtain-menu-item]");
+    }
+
+    beforeEach(() => {
+      document.body.innerHTML = `
+        <div role="menu">
+          <div role="menuitem" data-kind="settings"><svg></svg><span>Settings</span></div>
+        </div>`;
+    });
+
+    it("offers Guest mode while it's off, and turns it on", async () => {
+      const turnOn = vi.fn(() => ({ ok: true as const }));
+      messages.handle({ "guest/turn-on": turnOn });
+      content = startContent({
+        hostname: "claude.ai",
+        registry: [withMenu],
+        navigation: at("/chat/abc"),
+      });
+      await vi.waitFor(() => {
+        expect(menuItem()?.textContent).toBe("Guest mode");
+      });
+      menuItem()?.click();
+      await vi.waitFor(() => {
+        expect(turnOn).toHaveBeenCalledWith(
+          { openChat: { site: "claude", chatId: "abc" } },
+          expect.anything(),
+        );
+      });
+    });
+
+    it("turns on without an open chat from other pages", async () => {
+      const turnOn = vi.fn(() => ({ ok: true as const }));
+      messages.handle({ "guest/turn-on": turnOn });
+      content = startContent({
+        hostname: "claude.ai",
+        registry: [withMenu],
+        navigation: at("/new"),
+      });
+      await vi.waitFor(() => {
+        expect(menuItem()).not.toBeNull();
+      });
+      menuItem()?.click();
+      await vi.waitFor(() => {
+        expect(turnOn).toHaveBeenCalledWith({}, expect.anything());
+      });
+    });
+
+    it("offers Exit guest mode while it's on", async () => {
+      await writeState({ guest: createGuestState(Date.now()) });
+      const turnOff = vi.fn(() => ({ ok: true as const }));
+      messages.handle({ "guest/turn-off": turnOff });
+      content = startContent({
+        hostname: "claude.ai",
+        registry: [withMenu],
+        navigation: at("/new"),
+      });
+      await vi.waitFor(() => {
+        expect(menuItem()?.textContent).toBe("Exit guest mode");
+      });
+      menuItem()?.click();
+      await vi.waitFor(() => {
+        expect(turnOff).toHaveBeenCalledOnce();
+      });
+    });
+
+    it("offers nothing until Guest mode's state is known", () => {
+      content = startContent({
+        hostname: "claude.ai",
+        registry: [withMenu],
+        navigation: at("/new"),
+      });
+      expect(menuItem()).toBeNull();
+    });
+
+    it("reports a menu that has changed, once", async () => {
+      const reports: CurtainMessages["health/report"]["request"][] = [];
+      messages.handle({
+        "health/report": (request) => {
+          reports.push(request);
+          return { ok: true };
+        },
+      });
+      document.body.innerHTML =
+        '<div role="menu"><div role="menuitem">Changed</div></div>';
+      content = startContent({
+        hostname: "claude.ai",
+        registry: [withMenu],
+        navigation: at("/new"),
+      });
+      await vi.waitFor(() => {
+        expect(reports.at(-1)?.missing).toEqual(["menu:user"]);
+      });
+      document.body.insertAdjacentHTML("beforeend", "<p>more</p>");
+      await settle();
+      expect(reports.filter((r) => r.missing.length > 0)).toHaveLength(1);
+    });
+  });
 });

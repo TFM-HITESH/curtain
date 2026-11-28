@@ -234,3 +234,31 @@ describe("cover", () => {
     ]);
   });
 });
+
+describe("menus", () => {
+  it("are checked like other selectors", () => {
+    expect(
+      siteProblems(
+        withChanges({
+          menus: [
+            {
+              id: "profile",
+              menu: "[role=menu]",
+              trigger: "button[aria-haspopup=menu]",
+              template: '[role=menuitem]:has(use[href*="settings"])',
+            },
+            {
+              id: "profile",
+              menu: "[role=menu]",
+              template: "[role=menuitem]",
+              after: ".settings",
+            },
+          ],
+        }),
+      ),
+    ).toEqual([
+      'menu "profile" is defined twice',
+      'menu "profile": ".settings" uses a class name',
+    ]);
+  });
+});

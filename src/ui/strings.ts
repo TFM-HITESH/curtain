@@ -11,3 +11,8 @@ export const COVER_TEXT = {
 } as const;
 
 export type CoverText = Readonly<Record<keyof typeof COVER_TEXT, string>>;
+
+export const MENU_TEXT = {
+  turnOn: "Guest mode",
+  turnOff: "Exit guest mode",
+} as const;
