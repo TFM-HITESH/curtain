@@ -35,3 +35,11 @@ export {
   createdInSession,
   measureSkew,
 } from "./time/skew";
+export { visibilityRules } from "./visibility/visibility";
+export type {
+  ChatItem,
+  IsVisible,
+  OtherItem,
+  ProjectItem,
+  VisibilityItem,
+} from "./visibility/visibility";
