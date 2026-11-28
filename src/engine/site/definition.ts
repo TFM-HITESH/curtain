@@ -75,6 +75,25 @@ export interface SiteDefinition {
   readonly anchors?: readonly Anchor[];
   /** Where and how a past chat is covered. */
   readonly cover?: CoverSpec;
+  /** Site menus that get a Guest mode item. */
+  readonly menus?: readonly MenuSpec[];
+}
+
+/**
+ * A site menu that gets an item of ours. The item is a copy of one of the
+ * menu's own items, so it looks and behaves like the rest.
+ */
+export interface MenuSpec {
+  /** A short name, such as "profile". */
+  readonly id: string;
+  /** An open menu, such as `[role=menu]`. */
+  readonly menu: Selector;
+  /** The button that opens it. If given, only the menu it controls counts. */
+  readonly trigger?: Selector;
+  /** The native item to copy, inside the menu. */
+  readonly template: Selector;
+  /** Our item goes right after this one. Defaults to the template. */
+  readonly after?: Selector;
 }
 
 /**
@@ -203,6 +222,20 @@ export function siteProblems(site: SiteDefinition): string[] {
   }
 
   if (site.cover) problems.push(...coverProblems(site.cover));
+
+  const menuIds = new Set<string>();
+  for (const menu of site.menus ?? []) {
+    const where = `menu "${menu.id}"`;
+    if (menuIds.has(menu.id)) problems.push(`${where} is defined twice`);
+    menuIds.add(menu.id);
+    const selectors = [menu.menu, menu.trigger, menu.template, menu.after];
+    for (const selector of selectors) {
+      if (selector === undefined) continue;
+      for (const problem of selectorProblems(selector)) {
+        problems.push(`${where}: "${selector}" ${problem}`);
+      }
+    }
+  }
 
   return problems;
 }

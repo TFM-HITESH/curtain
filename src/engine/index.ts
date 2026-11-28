@@ -3,6 +3,7 @@ export type {
   Anchor,
   CoverSpec,
   CoverTheme,
+  MenuSpec,
   IdSource,
   ItemKind,
   Routes,
@@ -41,3 +42,9 @@ export { createTitleGuard } from "./title/title-guard";
 export type { TitleGuard } from "./title/title-guard";
 export { resolveTheme } from "./mimic/theme";
 export type { ResolvedTheme } from "./mimic/theme";
+export { MENU_ITEM_ATTRIBUTE, createMenuInjector } from "./menu/menu-injector";
+export type {
+  MenuInjector,
+  MenuInjectorOptions,
+  MenuItem,
+} from "./menu/menu-injector";
