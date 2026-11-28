@@ -9,6 +9,7 @@ import {
   type Prefs,
   type SessionSets,
   type SiteId,
+  type StorageKey,
   type StorageState,
 } from "./schema";
 
@@ -122,14 +123,34 @@ export function normalizePrefs(value: unknown): Prefs {
   return { onboarded: raw["onboarded"] === true };
 }
 
+const NORMALIZERS: {
+  readonly [K in StorageKey]: (value: unknown, now: number) => StorageState[K];
+} = {
+  guest: normalizeGuest,
+  marks: normalizeMarks,
+  pin: normalizePin,
+  lockout: normalizeLockout,
+  prefs: normalizePrefs,
+  schema: () => SCHEMA_VERSION,
+};
+
+/** Normalizes the value of a single storage key, for example from a change event. */
+export function normalizeValue<K extends StorageKey>(
+  key: K,
+  value: unknown,
+  now: number,
+): StorageState[K] {
+  return NORMALIZERS[key](value, now);
+}
+
 /** Normalizes every key of a current-version state. */
 export function normalizeState(raw: Raw, now: number): StorageState {
   return {
-    guest: normalizeGuest(raw["guest"], now),
-    marks: normalizeMarks(raw["marks"]),
-    pin: normalizePin(raw["pin"]),
-    lockout: normalizeLockout(raw["lockout"]),
-    prefs: normalizePrefs(raw["prefs"]),
-    schema: SCHEMA_VERSION,
+    guest: normalizeValue("guest", raw["guest"], now),
+    marks: normalizeValue("marks", raw["marks"], now),
+    pin: normalizeValue("pin", raw["pin"], now),
+    lockout: normalizeValue("lockout", raw["lockout"], now),
+    prefs: normalizeValue("prefs", raw["prefs"], now),
+    schema: normalizeValue("schema", raw["schema"], now),
   };
 }

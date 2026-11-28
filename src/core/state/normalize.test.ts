@@ -7,6 +7,7 @@ import {
   normalizePin,
   normalizePrefs,
   normalizeState,
+  normalizeValue,
 } from "./normalize";
 import { SCHEMA_VERSION, createGuestState, defaultState } from "./schema";
 
@@ -183,5 +184,19 @@ describe("normalizeState", () => {
 
   it("always reports the current schema version", () => {
     expect(normalizeState({ schema: 0 }, NOW).schema).toBe(SCHEMA_VERSION);
+  });
+});
+
+describe("normalizeValue", () => {
+  it("normalizes a single key the same way as the whole state", () => {
+    expect(normalizeValue("marks", { chatgpt: ["a", "a"] }, NOW)).toEqual({
+      chatgpt: ["a"],
+      claude: [],
+      gemini: [],
+    });
+    expect(normalizeValue("guest", "damaged", NOW)).toEqual(
+      createGuestState(NOW),
+    );
+    expect(normalizeValue("schema", 0, NOW)).toBe(SCHEMA_VERSION);
   });
 });

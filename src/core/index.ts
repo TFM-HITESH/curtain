@@ -18,6 +18,7 @@ export type {
   StorageKey,
   StorageState,
 } from "./state/schema";
+export { normalizeState, normalizeValue } from "./state/normalize";
 export { migrate } from "./state/migrations";
 export type { Migration, MigrationResult } from "./state/migrations";
 export {
