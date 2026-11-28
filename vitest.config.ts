@@ -12,6 +12,7 @@ export default defineConfig({
         "src/platform/**/*.ts",
         "src/engine/**/*.ts",
         "src/sites/**/*.ts",
+        "src/ui/**/*.ts",
         "src/entrypoints/**/*.ts",
       ],
       // Entry files only wire things together.
