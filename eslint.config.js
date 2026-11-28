@@ -7,6 +7,27 @@ import tseslint from "typescript-eslint";
 
 const modules = ["core", "platform", "engine", "ui", "sites", "entrypoints"];
 
+const moduleImportPatterns = [
+  {
+    regex: `^@/(${modules.join("|")})/.+`,
+    message:
+      "Import from the module's public entry point (for example `@/core`), not its internals.",
+  },
+  {
+    regex: `^(\\.\\./)+(${modules.join("|")})(/|$)`,
+    message:
+      "Import other modules through their alias (for example `@/core`), not relative paths.",
+  },
+];
+
+const browserApiMessage =
+  "Use the wrappers in `@/platform` instead of calling browser APIs directly.";
+const browserApiImport = { name: "wxt/browser", message: browserApiMessage };
+const browserApiGlobals = [
+  { name: "chrome", message: browserApiMessage },
+  { name: "browser", message: browserApiMessage },
+];
+
 export default defineConfig(
   globalIgnores([".output/", ".wxt/", "coverage/"]),
 
@@ -95,21 +116,17 @@ export default defineConfig(
       // Cross-module imports go through each module's public entry point, `@/<module>`.
       "no-restricted-imports": [
         "error",
-        {
-          patterns: [
-            {
-              regex: `^@/(${modules.join("|")})/.+`,
-              message:
-                "Import from the module's public entry point (for example `@/core`), not its internals.",
-            },
-            {
-              regex: `^(\\.\\./)+(${modules.join("|")})(/|$)`,
-              message:
-                "Import other modules through their alias (for example `@/core`), not relative paths.",
-            },
-          ],
-        },
+        { paths: [browserApiImport], patterns: moduleImportPatterns },
       ],
+      // Browser APIs are wrapped in `src/platform`, so the rest stays testable and portable.
+      "no-restricted-globals": ["error", ...browserApiGlobals],
+    },
+  },
+  {
+    files: ["src/platform/**/*.ts"],
+    rules: {
+      "no-restricted-imports": ["error", { patterns: moduleImportPatterns }],
+      "no-restricted-globals": "off",
     },
   },
 
