@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { createGuestState, startSession } from "@/core";
 import { defineSite } from "@/engine";
-import { writeState } from "@/platform";
+import { messages, writeState, type CurtainMessages } from "@/platform";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeBrowser } from "wxt/testing/fake-browser";
 import { startContent, type Content } from "./content";
@@ -186,6 +186,85 @@ describe("startContent", () => {
       });
       await writeState({ guest: null });
       expect(mode()).toBe("off");
+    });
+  });
+
+  describe("chats created in this tab", () => {
+    type Created = CurtainMessages["session/chat-created"]["request"];
+
+    function fakeNavigation(pathname: string) {
+      const location = { pathname };
+      const navigation = new EventTarget();
+      return {
+        win: { location, navigation } as unknown as Window,
+        go(path: string, navigationType: string) {
+          location.pathname = path;
+          navigation.dispatchEvent(
+            Object.assign(new Event("currententrychange"), { navigationType }),
+          );
+        },
+      };
+    }
+
+    function captureCreated() {
+      const created: Created[] = [];
+      messages.handle({
+        "session/chat-created": (request) => {
+          created.push(request);
+          return { ok: true };
+        },
+      });
+      return created;
+    }
+
+    async function startOn(path: string) {
+      const nav = fakeNavigation(path);
+      content = startContent({
+        hostname: "claude.ai",
+        registry,
+        navigation: { win: nav.win },
+      });
+      await vi.waitFor(() => {
+        expect(mode()).not.toBe("pending");
+      });
+      return nav;
+    }
+
+    it("are reported while Guest mode is on", async () => {
+      await writeState({ guest: createGuestState(Date.now()) });
+      const created = captureCreated();
+      const nav = await startOn("/new");
+      nav.go("/chat/abc", "push");
+      await vi.waitFor(() => {
+        expect(created).toEqual([
+          { site: "claude", chatId: "abc", serverTime: null },
+        ]);
+      });
+    });
+
+    it("aren't reported while Guest mode is off", async () => {
+      const created = captureCreated();
+      const nav = await startOn("/new");
+      nav.go("/chat/abc", "push");
+      await settle();
+      expect(created).toEqual([]);
+    });
+
+    it("don't include chats opened by going back", async () => {
+      await writeState({ guest: createGuestState(Date.now()) });
+      const created = captureCreated();
+      const nav = await startOn("/new");
+      nav.go("/chat/old", "traverse");
+      await settle();
+      expect(created).toEqual([]);
+    });
+
+    it("fail quietly if the worker can't be reached", async () => {
+      await writeState({ guest: createGuestState(Date.now()) });
+      const nav = await startOn("/new");
+      nav.go("/chat/abc", "push");
+      await settle();
+      expect(mode()).toBe("guest");
     });
   });
 });

@@ -19,3 +19,11 @@ export {
 export { createListWatcher } from "./observer/list-watcher";
 export type { ListWatcher, ListWatcherOptions } from "./observer/list-watcher";
 export { readId } from "./observer/read-id";
+export { MAX_NEW_CHAT_AGE_MS, createdChat } from "./navigation/created-chat";
+export type {
+  CreatedChat,
+  NavigationKind,
+  RouteChange,
+} from "./navigation/created-chat";
+export { watchNavigation } from "./navigation/watch-navigation";
+export type { WatchNavigationOptions } from "./navigation/watch-navigation";
