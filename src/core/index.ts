@@ -43,3 +43,14 @@ export type {
   ProjectItem,
   VisibilityItem,
 } from "./visibility/visibility";
+export { PIN_ITERATIONS, hashPin, isValidPin, verifyPin } from "./pin/pin";
+export type { HashOptions } from "./pin/pin";
+export {
+  LOCKOUT_MS,
+  MAX_ATTEMPTS,
+  NO_LOCKOUT,
+  isLockedOut,
+  lockoutRemaining,
+  recordFailure,
+  recordSuccess,
+} from "./pin/lockout";
