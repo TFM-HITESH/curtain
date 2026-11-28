@@ -7,9 +7,18 @@ export default defineConfig({
     passWithNoTests: true,
     coverage: {
       provider: "v8",
-      include: ["src/core/**/*.ts", "src/platform/**/*.ts"],
-      exclude: ["**/*.test.ts", "src/*/index.ts"],
-      // Core decides what a guest can see and platform guards every browser call, so both stay fully tested.
+      include: [
+        "src/core/**/*.ts",
+        "src/platform/**/*.ts",
+        "src/entrypoints/background/**/*.ts",
+      ],
+      // Entry files only wire things together.
+      exclude: [
+        "**/*.test.ts",
+        "src/*/index.ts",
+        "src/entrypoints/**/index.ts",
+      ],
+      // These decide what a guest can see and guard every state change, so they stay fully tested.
       thresholds: { lines: 95, functions: 95, branches: 95, statements: 95 },
     },
   },
