@@ -88,6 +88,18 @@ export interface CurtainMessages {
     request: { readonly pin: string; readonly currentPin?: string };
     response: ActionResult;
   };
+  /**
+   * What a page found about a site's health: missing anchors and features
+   * that stopped. Recorded on this device only.
+   */
+  "health/report": {
+    request: {
+      readonly site: SiteId;
+      readonly missing: readonly string[];
+      readonly failures: readonly string[];
+    };
+    response: ActionResult;
+  };
   /** Removes the PIN. Needs the current one. */
   "pin/remove": {
     request: { readonly currentPin?: string };

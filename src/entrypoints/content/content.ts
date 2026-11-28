@@ -3,18 +3,29 @@ import {
   visibilityRules,
   type GuestState,
   type Marks,
+  type StorageState,
 } from "@/core";
 import {
+  checkHealthLater,
+  createGuard,
   createListWatcher,
   createdChat,
   installConcealer,
   watchNavigation,
   type Concealer,
+  type Guard,
+  type HealthCheckOptions,
   type ListWatcherOptions,
+  type RouteChange,
   type SiteDefinition,
   type WatchNavigationOptions,
 } from "@/engine";
-import { messages, onStateChanged, readState } from "@/platform";
+import {
+  messages,
+  onStateChanged,
+  readState,
+  type StateChanges,
+} from "@/platform";
 import { siteForHost, sites } from "@/sites";
 
 /**
@@ -24,7 +35,18 @@ import { siteForHost, sites } from "@/sites";
  * in place if storage never answers. Once Guest mode is known to be on, the
  * list watcher reveals what belongs to the session, and chats created in this
  * tab are reported so they join the session everywhere.
+ *
+ * Every feature runs through a guard. If one fails, it stops on its own, and
+ * if Curtain can no longer follow Guest mode, the page goes back to hiding.
+ * Failures and missing page elements are recorded on this device for the
+ * popup to show.
  */
+
+/** Feature names, as recorded when one stops after an error. */
+const STATE = "state";
+const RENDER = "render";
+const NAVIGATION = "navigation";
+const HEALTH = "health-check";
 
 export interface ContentOptions {
   readonly hostname?: string;
@@ -34,11 +56,13 @@ export interface ContentOptions {
   /** Only tests change these. */
   readonly watcher?: ListWatcherOptions;
   readonly navigation?: WatchNavigationOptions;
+  readonly health?: HealthCheckOptions;
   readonly now?: () => number;
 }
 
 export interface Content {
   readonly concealer: Concealer;
+  readonly guard: Guard;
   readonly stop: () => void;
 }
 
@@ -48,6 +72,7 @@ export function startContent({
   registry = sites,
   watcher: watcherOptions = {},
   navigation: navigationOptions = {},
+  health: healthOptions = {},
   now = Date.now,
 }: ContentOptions = {}): Content | undefined {
   const site = siteForHost(hostname, registry);
@@ -55,7 +80,30 @@ export function startContent({
 
   const siteId = site.id;
   const concealer = installConcealer(site, doc);
-  const watcher = createListWatcher(site, { doc, ...watcherOptions });
+
+  let missing: readonly string[] = [];
+  function reportHealth() {
+    messages
+      .send("health/report", {
+        site: siteId,
+        missing,
+        failures: guard.failures,
+      })
+      .catch(() => {
+        // Health is only a hint for the popup; losing a report is fine.
+      });
+  }
+
+  const guard = createGuard((feature) => {
+    // Without these, Curtain can't follow Guest mode, so hide to be safe.
+    if (feature === STATE || feature === RENDER) concealer.setMode("pending");
+    reportHealth();
+  });
+  const watcher = createListWatcher(site, {
+    doc,
+    guard,
+    ...watcherOptions,
+  });
 
   // `undefined` means not known yet. Change events are always newer than the
   // first read, so the read only fills in what no event has told us.
@@ -63,6 +111,10 @@ export function startContent({
   let marks: Marks | undefined;
 
   function render() {
+    guard.run(RENDER, renderNow);
+  }
+
+  function renderNow() {
     if (guest === undefined) return;
     if (guest === null) {
       watcher.stop();
@@ -77,39 +129,55 @@ export function startContent({
     concealer.setMode("guest");
   }
 
-  const stopListening = onStateChanged((changes) => {
-    if (changes.guest === undefined && changes.marks === undefined) return;
-    if (changes.guest !== undefined) guest = changes.guest;
-    if (changes.marks !== undefined) marks = changes.marks;
-    render();
-  });
+  const stopListening = onStateChanged(
+    guard.wrap(STATE, (changes: StateChanges) => {
+      if (changes.guest === undefined && changes.marks === undefined) return;
+      if (changes.guest !== undefined) guest = changes.guest;
+      if (changes.marks !== undefined) marks = changes.marks;
+      render();
+    }),
+  );
 
-  const stopNavigation = watchNavigation((change) => {
-    // Only chats created while Guest mode is on join the session.
-    if (!guest) return;
-    const created = createdChat(site, change, now());
-    if (!created) return;
-    messages
-      .send("session/chat-created", { site: siteId, ...created })
-      .catch(() => {
-        // If the worker can't be reached, the chat stays hidden: the safe side.
-      });
-  }, navigationOptions);
+  const stopNavigation = watchNavigation(
+    guard.wrap(NAVIGATION, (change: RouteChange) => {
+      // Only chats created while Guest mode is on join the session.
+      if (!guest) return;
+      const created = createdChat(site, change, now());
+      if (!created) return;
+      messages
+        .send("session/chat-created", { site: siteId, ...created })
+        .catch(() => {
+          // If the worker can't be reached, the chat stays hidden: the safe side.
+        });
+    }),
+    navigationOptions,
+  );
 
   readState().then(
-    (state) => {
+    guard.wrap(STATE, (state: StorageState) => {
       guest ??= state.guest;
       marks ??= state.marks;
       render();
-    },
+    }),
     () => {
       // Without an answer the page stays hidden, which is the safe outcome.
     },
   );
 
+  const cancelHealthCheck = checkHealthLater(
+    site,
+    guard.wrap(HEALTH, (found: string[]) => {
+      missing = found;
+      reportHealth();
+    }),
+    { doc, ...healthOptions },
+  );
+
   return {
     concealer,
+    guard,
     stop: () => {
+      cancelHealthCheck();
       stopNavigation();
       stopListening();
       watcher.stop();

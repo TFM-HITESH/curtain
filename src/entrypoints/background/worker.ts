@@ -224,6 +224,22 @@ export function startWorker({
         return OK;
       }),
 
+    "health/report": ({ site, missing, failures }) =>
+      change(async ({ health }) => {
+        const id = siteOf(site);
+        await writeState({
+          health: {
+            ...health,
+            [id]: {
+              missing: normalizeIds(missing),
+              failures: normalizeIds(failures),
+              checkedAt: now(),
+            },
+          },
+        });
+        return OK;
+      }),
+
     "pin/remove": ({ currentPin }) =>
       change(async (state) => {
         if (state.guest !== null) return GUEST_ON;

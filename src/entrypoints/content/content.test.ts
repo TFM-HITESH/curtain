@@ -267,4 +267,108 @@ describe("startContent", () => {
       expect(mode()).toBe("guest");
     });
   });
+
+  describe("when something fails", () => {
+    type Report = CurtainMessages["health/report"]["request"];
+
+    function captureReports() {
+      const reports: Report[] = [];
+      messages.handle({
+        "health/report": (request) => {
+          reports.push(request);
+          return { ok: true };
+        },
+      });
+      return reports;
+    }
+
+    it("stops only the feature that failed and records it", async () => {
+      await writeState({ guest: createGuestState(Date.now()) });
+      const reports = captureReports();
+      content = startContent({
+        hostname: "claude.ai",
+        registry,
+        watcher: {
+          schedule: () => {
+            throw new Error("site changed");
+          },
+        },
+      });
+      await vi.waitFor(() => {
+        expect(mode()).toBe("guest");
+      });
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        '<a data-chat-row href="/chat/late"></a>',
+      );
+      await vi.waitFor(() => {
+        expect(reports.at(-1)?.failures).toEqual(["list-watcher"]);
+      });
+      expect(content?.guard.failed("list-watcher")).toBe(true);
+      expect(mode()).toBe("guest");
+    });
+
+    it("goes back to hiding if it can't follow Guest mode", async () => {
+      const broken = defineSite({
+        ...site,
+        surfaces: [
+          {
+            kind: "filter",
+            id: "chats",
+            item: "[data-chat-row",
+            itemKind: "chat",
+            idFrom: { href: /\/chat\/(\w+)/ },
+          },
+        ],
+      });
+      await writeState({ guest: createGuestState(Date.now()) });
+      const reports = captureReports();
+      content = startContent({ hostname: "claude.ai", registry: [broken] });
+      await vi.waitFor(() => {
+        expect(reports.at(-1)?.failures).toEqual(["render"]);
+      });
+      expect(mode()).toBe("pending");
+    });
+  });
+
+  describe("site health", () => {
+    it("reports anchors that are missing after the page loads", async () => {
+      const withAnchors = defineSite({
+        ...site,
+        anchors: [
+          { id: "sidebar", selector: "nav[data-sidebar]" },
+          { id: "composer", selector: "[data-composer]" },
+        ],
+      });
+      document.body.innerHTML = "<nav data-sidebar></nav>";
+      const reports: CurtainMessages["health/report"]["request"][] = [];
+      messages.handle({
+        "health/report": (request) => {
+          reports.push(request);
+          return { ok: true };
+        },
+      });
+      content = startContent({
+        hostname: "claude.ai",
+        registry: [withAnchors],
+        health: { delayMs: 0, path: () => "/new" },
+      });
+      await vi.waitFor(() => {
+        expect(reports).toEqual([
+          { site: "claude", missing: ["composer"], failures: [] },
+        ]);
+      });
+    });
+
+    it("doesn't mind if the report can't be delivered", async () => {
+      content = startContent({
+        hostname: "claude.ai",
+        registry,
+        health: { delayMs: 0 },
+      });
+      await settle();
+      await settle();
+      expect(mode()).not.toBeNull();
+    });
+  });
 });
