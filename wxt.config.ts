@@ -1,10 +1,5 @@
 import { defineConfig } from "wxt";
-
-const supportedSites = [
-  "https://chatgpt.com/*",
-  "https://claude.ai/*",
-  "https://gemini.google.com/*",
-];
+import { MATCH_PATTERNS } from "./src/sites";
 
 export default defineConfig({
   srcDir: "src",
@@ -15,7 +10,7 @@ export default defineConfig({
     description:
       "Hide your chat history while sharing your screen or your device. New chats still work and save.",
     permissions: ["storage"],
-    host_permissions: supportedSites,
+    host_permissions: [...MATCH_PATTERNS],
     icons: {
       16: "icons/app-16.png",
       32: "icons/app-32.png",
