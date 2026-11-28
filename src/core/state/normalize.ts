@@ -6,6 +6,7 @@ import {
   type Lockout,
   type Marks,
   type PinRecord,
+  type Health,
   type Prefs,
   type SessionSets,
   type SiteId,
@@ -123,6 +124,17 @@ export function normalizePrefs(value: unknown): Prefs {
   return { onboarded: raw["onboarded"] === true };
 }
 
+export function normalizeHealth(value: unknown): Health {
+  return perSite(value, (site) => {
+    const raw = isRecord(site) ? site : {};
+    return {
+      missing: normalizeIds(raw["missing"]),
+      failures: normalizeIds(raw["failures"]),
+      checkedAt: isTimestamp(raw["checkedAt"]) ? raw["checkedAt"] : 0,
+    };
+  });
+}
+
 const NORMALIZERS: {
   readonly [K in StorageKey]: (value: unknown, now: number) => StorageState[K];
 } = {
@@ -131,6 +143,7 @@ const NORMALIZERS: {
   pin: normalizePin,
   lockout: normalizeLockout,
   prefs: normalizePrefs,
+  health: normalizeHealth,
   schema: () => SCHEMA_VERSION,
 };
 
@@ -151,6 +164,7 @@ export function normalizeState(raw: Raw, now: number): StorageState {
     pin: normalizeValue("pin", raw["pin"], now),
     lockout: normalizeValue("lockout", raw["lockout"], now),
     prefs: normalizeValue("prefs", raw["prefs"], now),
+    health: normalizeValue("health", raw["health"], now),
     schema: normalizeValue("schema", raw["schema"], now),
   };
 }

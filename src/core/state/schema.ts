@@ -59,6 +59,21 @@ export interface Prefs {
   readonly onboarded: boolean;
 }
 
+/**
+ * What the last check on a site found. Kept on this device only, so the popup
+ * can say when a site may have changed. Holds names, never page content.
+ */
+export interface SiteHealth {
+  /** Elements the site definition relies on that couldn't be found. */
+  readonly missing: readonly string[];
+  /** Engine features that stopped after an error. */
+  readonly failures: readonly string[];
+  /** When this was recorded, in epoch milliseconds, or 0 if never. */
+  readonly checkedAt: number;
+}
+
+export type Health = Readonly<Record<SiteId, SiteHealth>>;
+
 /** Every storage key and the type stored under it. */
 export interface StorageState {
   readonly guest: GuestState | null;
@@ -66,6 +81,7 @@ export interface StorageState {
   readonly pin: PinRecord | null;
   readonly lockout: Lockout;
   readonly prefs: Prefs;
+  readonly health: Health;
   readonly schema: number;
 }
 
@@ -77,6 +93,7 @@ export const STORAGE_KEYS = [
   "pin",
   "lockout",
   "prefs",
+  "health",
   "schema",
 ] as const satisfies readonly StorageKey[];
 
@@ -97,6 +114,14 @@ export function emptyMarks(): Marks {
   return perSite<readonly string[]>(() => []);
 }
 
+export function emptySiteHealth(): SiteHealth {
+  return { missing: [], failures: [], checkedAt: 0 };
+}
+
+export function emptyHealth(): Health {
+  return perSite(emptySiteHealth);
+}
+
 /** The state of a fresh install. */
 export function defaultState(): StorageState {
   return {
@@ -105,6 +130,7 @@ export function defaultState(): StorageState {
     pin: null,
     lockout: { failures: 0, until: 0 },
     prefs: { onboarded: false },
+    health: emptyHealth(),
     schema: SCHEMA_VERSION,
   };
 }

@@ -16,6 +16,11 @@ describe("defaultState", () => {
       pin: null,
       lockout: { failures: 0, until: 0 },
       prefs: { onboarded: false },
+      health: {
+        chatgpt: { missing: [], failures: [], checkedAt: 0 },
+        claude: { missing: [], failures: [], checkedAt: 0 },
+        gemini: { missing: [], failures: [], checkedAt: 0 },
+      },
       schema: SCHEMA_VERSION,
     });
   });
