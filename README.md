@@ -41,6 +41,12 @@ Curtain is built for moments like these:
 | Firefox                       | Planned        |
 | ChatGPT · Claude · Gemini     | In development |
 
+## Contributing
+
+Curtain is built in the open, and help is very welcome. Issues labelled [good first issue](https://github.com/TFM-HITESH/curtain/labels/good%20first%20issue) are a good place to start, and [help wanted](https://github.com/TFM-HITESH/curtain/labels/help%20wanted) marks bigger pieces where an extra pair of hands would make a difference. The [milestones](https://github.com/TFM-HITESH/curtain/milestones) show what's planned for each release.
+
+The [contributing guide](CONTRIBUTING.md) covers setup and conventions. If you have a question or an idea, start a [discussion](https://github.com/TFM-HITESH/curtain/discussions).
+
 ## Verifying a release
 
 Every [release](https://github.com/TFM-HITESH/curtain/releases) is built by GitHub Actions from a tagged commit and attaches the extension zip, a `SHA256SUMS.txt` file and a signed build provenance attestation. The zip in each browser store is the same file.

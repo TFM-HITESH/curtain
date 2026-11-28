@@ -5,7 +5,7 @@ Thanks for helping. Curtain depends on contributors: ChatGPT, Claude and Gemini 
 ## Ways to help
 
 - **Report a site change.** If something hidden shows up, or a page looks broken in Guest mode, open an issue with the [site change form](https://github.com/TFM-HITESH/curtain/issues/new?template=site-change.yml).
-- **Pick up an issue.** Issues labelled [`good first issue`](https://github.com/TFM-HITESH/curtain/labels/good%20first%20issue) are scoped for newcomers, and [`help wanted`](https://github.com/TFM-HITESH/curtain/labels/help%20wanted) marks work where help is especially welcome. Comment on an issue before starting, so nobody duplicates effort.
+- **Pick up an issue.** Issues labelled [`good first issue`](https://github.com/TFM-HITESH/curtain/labels/good%20first%20issue) are scoped for newcomers, and [`help wanted`](https://github.com/TFM-HITESH/curtain/labels/help%20wanted) marks work where help is especially welcome. Comment on an issue before starting, so nobody duplicates effort. The [milestones](https://github.com/TFM-HITESH/curtain/milestones) show what's planned for each release.
 - **Improve the docs**, or help others in [Discussions](https://github.com/TFM-HITESH/curtain/discussions).
 
 Please follow the [code of conduct](CODE_OF_CONDUCT.md) in all project spaces. Report security vulnerabilities privately, as described in the [security policy](SECURITY.md).
